@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JAGO - Scholarship Assistant</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mukta:wght@400;600;800&display=swap">
+<style>
+:root{--ink:#14243b;--bg:#edf2f4;--panel:#fff;--line:#d3dde3;--green:#1e6b52;--gold:#e9a100;--muted:#5b6b7b}
+@media (prefers-color-scheme:dark){:root{--ink:#e8eef3;--bg:#0f1a26;--panel:#16263a;--line:#27405a;--muted:#93a4b5}}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Mukta","Noto Sans Devanagari",system-ui,sans-serif;background:var(--bg);color:var(--ink);height:100vh;height:100dvh;display:flex;justify-content:center}
+main{width:100%;max-width:760px;display:flex;flex-direction:column;background:var(--panel);border-inline:1px solid var(--line)}
+header{padding:14px 18px;border-bottom:4px solid var(--gold);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+header h1{margin:0;font-size:1.6rem;font-weight:800;letter-spacing:.02em;flex:1}
+header h1 small{display:block;font-size:.8rem;font-weight:400;color:var(--muted);letter-spacing:0}
+select,input{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--ink)}
+#log{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:85%;padding:10px 14px;border-radius:14px;white-space:pre-wrap;line-height:1.5}
+.u{align-self:flex-end;background:var(--green);color:#fff;border-bottom-right-radius:4px}
+.b{align-self:flex-start;background:var(--bg);border-bottom-left-radius:4px}
+.meta{font-size:.72rem;color:var(--muted);margin-top:4px}
+#chips{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 10px}
+#chips button{font:inherit;font-size:.85rem;padding:5px 12px;border:1px solid var(--green);color:var(--green);background:transparent;border-radius:999px;cursor:pointer}
+#chips button:hover{background:var(--green);color:#fff}
+form{display:flex;gap:8px;padding:12px 18px;border-top:1px solid var(--line)}
+form input{flex:1}
+form button{font:inherit;font-weight:600;padding:8px 18px;border:0;border-radius:6px;background:var(--gold);color:#14243b;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+button:disabled{opacity:.5;cursor:wait}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>JAGO<small>Scholarship help for ST students</small></h1>
+    <label>Demo student
+      <select id="student">
+        <option value="STU001">Rahul (verification pending)</option>
+        <option value="STU002">Aman (paid)</option>
+        <option value="STU003">Sita (deficiency)</option>
+      </select>
+    </label>
+    <input id="key" type="password" placeholder="API key" hidden aria-label="API key">
+  </header>
+  <div id="log" aria-live="polite"></div>
+  <div id="chips"></div>
+  <form id="f">
+    <input id="q" autocomplete="off" placeholder="Ask in English, Hindi or Hinglish" aria-label="Your question" required maxlength="1000">
+    <button id="send">Send</button>
+  </form>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const log=$("log"),f=$("f"),q=$("q"),send=$("send");
+let sessionId=null;
+["Meri scholarship ka status kya hai?","Which documents do I need?","Am I eligible for Top Class?","मेरा पेमेंट कब आएगा?"].forEach(t=>{const b=document.createElement("button");b.type="button";b.textContent=t;b.onclick=()=>{q.value=t;f.requestSubmit()};$("chips").append(b)});
+function add(text,cls){const d=document.createElement("div");d.className="m "+cls;d.textContent=text;log.append(d);log.scrollTop=log.scrollHeight;return d}
+function meta(el,t){if(!t)return;const m=document.createElement("div");m.className="meta";m.textContent=t;el.append(m)}
+add("Hello, I am JAGO. Ask me about your scholarship status, documents, eligibility or payments.","b");
+fetch("/api/v1/config").then(r=>r.json()).then(c=>{if(c.authRequired)$("key").hidden=false}).catch(()=>{});
+$("student").onchange=()=>{sessionId=null;log.innerHTML="";add("Switched student. Ask your question.","b")};
+f.onsubmit=async e=>{
+  e.preventDefault();const message=q.value.trim();if(!message)return;
+  add(message,"u");q.value="";send.disabled=true;const wait=add("Checking...","b");
+  try{
+    const h={"Content-Type":"application/json"};if($("key").value)h["x-jago-api-key"]=$("key").value;
+    const r=await fetch("/api/v1/chat",{method:"POST",headers:h,body:JSON.stringify({studentId:$("student").value,message,sessionId:sessionId||undefined})});
+    const j=await r.json();
+    if(!j.success)throw new Error(j.message||"Request failed");
+    sessionId=j.data.sessionId;wait.textContent=j.data.reply;
+    meta(wait,j.data.toolsUsed.length?"Used: "+j.data.toolsUsed.join(", "):(j.data.mode==="fallback"?"Offline demo mode":""));
+  }catch(err){wait.textContent="Could not get a reply: "+err.message+". Check the API key and try again."}
+  send.disabled=false;q.focus();log.scrollTop=log.scrollHeight;
+};
+</script>
+</body>
+</html>
