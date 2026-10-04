@@ -1,3 +1,4 @@
+import { knowledgeChunkCount } from "./services/rag.service.js";
 import express from "express";
 import cors from "cors";
 import path from "node:path";
@@ -12,7 +13,12 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.static(path.join(process.cwd(), "public")));
 
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "JAGO API", ai: aiEnabled ? "gemini" : "offline-demo" });
+  res.json({
+    status: "ok",
+    service: "JAGO API",
+    ai: aiEnabled ? "gemini" : "offline-demo",
+    knowledgeChunks: knowledgeChunkCount()
+  });
 });
 
 // Demo UI config: tells the web client whether it must send an API key.

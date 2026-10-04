@@ -1,0 +1,9 @@
+{
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }],
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "knowledge/**",
+      "maxDuration": 30
+    }
+  }
+}

@@ -1,8 +1,8 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
-import { initKnowledge } from "./services/rag.service.js";
+import { ensureKnowledge } from "./services/rag.service.js";
 
-await initKnowledge();
+await ensureKnowledge();
 app.listen(env.port, () => {
   console.log(`JAGO API running on http://localhost:${env.port}`);
   if (!env.geminiApiKey) console.log("[jago] GEMINI_API_KEY not set: running in offline demo mode");

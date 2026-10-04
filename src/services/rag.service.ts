@@ -52,6 +52,9 @@ export async function initKnowledge() {
     }
   }
 }
+let ready: Promise<void> | null = null;
+export const ensureKnowledge = () => (ready ??= initKnowledge());
+export const knowledgeChunkCount = () => chunks.length;
 
 const cosine = (a: number[], b: number[]) => {
   let dot = 0, na = 0, nb = 0;
@@ -65,6 +68,7 @@ function keywordScore(q: string[], c: Chunk) {
 }
 
 export async function searchKnowledge(query: string, k = 3) {
+  await ensureKnowledge();          
   let scored: { chunk: Chunk; score: number }[];
   if (vectorsReady && ai) {
     try {
